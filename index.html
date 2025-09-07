@@ -1,0 +1,22 @@
+// --- prosty autosave draft co 15s ---
+setInterval(()=>{
+  const text = editor.innerText.trim();
+  if (text) {
+    const draft = { text, updated: new Date().toISOString() };
+    localStorage.setItem('notatnik_draft', JSON.stringify(draft));
+  }
+}, 15000);
+
+// przy starcie wczytaj draft (jeśli istnieje)
+document.addEventListener('DOMContentLoaded', ()=>{
+  const raw = localStorage.getItem('notatnik_draft');
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      if (d && d.text) {
+        // jeśli edytor pusty, wczytaj draft
+        if (!editor.innerText.trim()) editor.innerText = d.text;
+      }
+    } catch(e){}
+  }
+});
