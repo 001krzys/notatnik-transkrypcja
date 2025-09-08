@@ -6,13 +6,7 @@
 <title>Notatnik — transkrypcja głosu</title>
 <style>
   :root{--bg:#0f1720;--card:#0b1220;--accent:#22c55e;--muted:#94a3b8;--text:#e6eef6}
-  html,body{
-    height:100%;
-    margin:0;
-    font-family:Inter,Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
-    background:linear-gradient(180deg,#071128 0%, #071826 100%);
-    color:var(--text);
-  }
+  html,body{height:100%;margin:0;font-family:Inter,Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;background:linear-gradient(180deg,#071128 0%, #071826 100%);color:var(--text)}
   .app{max-width:900px;margin:18px auto;padding:16px}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
   h1{font-size:18px;margin:0}
@@ -111,13 +105,12 @@ let recognizing = false;
 let usePunctuation = true;
 let shouldAutoRestart = true;
 
-// --- do kontroli duplikatów ---
-let lastResultIndex = -1;
+// zapamiętujemy ostatni wynik końcowy, żeby nie powtarzać
+let lastFinalText = "";
 
 // Local storage key
 const STORAGE_KEY = 'notatnik_notes_v1';
 
-// Init recognition
 function initRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -155,11 +148,9 @@ function initRecognition() {
     let finalTranscript = '';
 
     for (let i = ev.resultIndex; i < ev.results.length; ++i) {
-      if (i <= lastResultIndex) continue; // pomijamy już obsłużone wyniki
       const res = ev.results[i];
       if (res.isFinal) {
         finalTranscript += res[0].transcript;
-        lastResultIndex = i;
       } else {
         interim += res[0].transcript;
       }
@@ -169,8 +160,10 @@ function initRecognition() {
       finalTranscript = applySimplePunctuation(finalTranscript);
     }
 
-    if (finalTranscript) {
+    // sprawdzamy duplikaty
+    if (finalTranscript && finalTranscript !== lastFinalText) {
       insertTextAtCursor(finalTranscript + ' ');
+      lastFinalText = finalTranscript;
     }
 
     interimSpan.textContent = interim;
@@ -205,14 +198,14 @@ function insertTextAtCursor(text) {
   editor.scrollTop = editor.scrollHeight;
 }
 
-// --- autosave co 15s ---
+// autosave co 15s
 setInterval(()=>{
   const text = editor.innerText.trim();
   const draft = { text, updated: new Date().toISOString() };
   localStorage.setItem('notatnik_draft', JSON.stringify(draft));
 },15000);
 
-// --- wczytaj draft przy starcie ---
+// wczytaj draft
 document.addEventListener('DOMContentLoaded', ()=>{
   renderNotes();
   const raw = localStorage.getItem('notatnik_draft');
