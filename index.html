@@ -6,7 +6,13 @@
 <title>Notatnik — transkrypcja głosu</title>
 <style>
   :root{--bg:#0f1720;--card:#0b1220;--accent:#22c55e;--muted:#94a3b8;--text:#e6eef6}
-  html,body{height:100%;margin:0;font-family:Inter,Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;background:linear-gradient(180deg,#071128 0%, #071826 100%);color:var(--text)}
+  html,body{
+    height:100%;
+    margin:0;
+    font-family:Inter,Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:linear-gradient(180deg,#071128 0%, #071826 100%);
+    color:var(--text);
+  }
   .app{max-width:900px;margin:18px auto;padding:16px}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
   h1{font-size:18px;margin:0}
@@ -105,8 +111,8 @@ let recognizing = false;
 let usePunctuation = true;
 let shouldAutoRestart = true;
 
-// --- zapamiętywanie duplikatów ---
-let lastFinal = '';
+// --- do kontroli duplikatów ---
+let lastResultIndex = -1;
 
 // Local storage key
 const STORAGE_KEY = 'notatnik_notes_v1';
@@ -147,10 +153,13 @@ function initRecognition() {
   r.onresult = (ev) => {
     let interim = '';
     let finalTranscript = '';
+
     for (let i = ev.resultIndex; i < ev.results.length; ++i) {
+      if (i <= lastResultIndex) continue; // pomijamy już obsłużone wyniki
       const res = ev.results[i];
       if (res.isFinal) {
         finalTranscript += res[0].transcript;
+        lastResultIndex = i;
       } else {
         interim += res[0].transcript;
       }
@@ -160,9 +169,8 @@ function initRecognition() {
       finalTranscript = applySimplePunctuation(finalTranscript);
     }
 
-    if (finalTranscript && finalTranscript !== lastFinal) {
+    if (finalTranscript) {
       insertTextAtCursor(finalTranscript + ' ');
-      lastFinal = finalTranscript;
     }
 
     interimSpan.textContent = interim;
